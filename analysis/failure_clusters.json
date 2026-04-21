@@ -1,124 +1,49 @@
 {
   "total_cases": 50,
-  "total_failures": 7,
-  "failure_rate": 0.14,
+  "total_failures": 3,
+  "failure_rate": 0.06,
   "clusters": {
     "reasoning_or_generation_failure": {
-      "count": 6,
-      "percentage": 85.71428571428571,
+      "count": 2,
+      "percentage": 66.66666666666666,
       "cases": [
         {
-          "case_id": "case_002",
-          "question": "What idea explains why evaluation matters in this lab?",
-          "expected_answer": "The lab emphasizes that if you cannot measure a system, you cannot improve it.",
-          "agent_answer": "The lab has four phases across four hours: dataset and synthetic data generation, evaluation engine and async runner, benchmark plus failure analysis, and final optimization with reporting.",
-          "judge_score": 0.3,
-          "case_type": "fact-check",
-          "difficulty": "easy",
-          "retrieved_doc_ids": [
-            "doc_schedule",
-            "doc_lab_overview",
-            "doc_retrieval"
-          ],
-          "ground_truth_doc_ids": [
-            "doc_lab_overview"
-          ],
-          "retrieval_hit": true,
-          "cluster": "reasoning_or_generation_failure"
-        },
-        {
-          "case_id": "case_016",
-          "question": "Why must the team evaluate retrieval before evaluating answer generation?",
-          "expected_answer": "Because retrieval metrics show whether the correct documents were found first; without that, answer quality issues cannot be traced reliably.",
-          "agent_answer": "Retrieval quality must be evaluated before generation quality. The required retrieval metrics are Hit Rate and MRR, and strong teams often add NDCG.",
-          "judge_score": 0.675,
-          "case_type": "reasoning",
-          "difficulty": "medium",
-          "retrieved_doc_ids": [
-            "doc_retrieval",
-            "doc_lab_overview",
-            "doc_ambiguity"
-          ],
-          "ground_truth_doc_ids": [
-            "doc_lab_overview",
-            "doc_retrieval"
-          ],
-          "retrieval_hit": true,
-          "cluster": "reasoning_or_generation_failure"
-        },
-        {
-          "case_id": "case_017",
-          "question": "Why are ground truth document IDs important for the whole benchmark pipeline?",
-          "expected_answer": "They let the team compute retrieval metrics and connect retrieval quality to downstream answer quality.",
-          "agent_answer": "Retrieval quality must be evaluated before generation quality. The required retrieval metrics are Hit Rate and MRR, and strong teams often add NDCG.",
-          "judge_score": 0.675,
-          "case_type": "reasoning",
-          "difficulty": "medium",
-          "retrieved_doc_ids": [
-            "doc_retrieval",
-            "doc_lab_overview",
-            "doc_performance"
-          ],
-          "ground_truth_doc_ids": [
-            "doc_retrieval",
-            "doc_reports"
-          ],
-          "retrieval_hit": true,
-          "cluster": "reasoning_or_generation_failure"
-        },
-        {
-          "case_id": "case_021",
-          "question": "Why does the failure analysis need to mention retrieval, chunking, or prompting?",
-          "expected_answer": "Because the 5 Whys should identify which system layer caused the error rather than only describing the symptom.",
-          "agent_answer": "Retrieval quality must be evaluated before generation quality. The required retrieval metrics are Hit Rate and MRR, and strong teams often add NDCG.",
-          "judge_score": 0.425,
-          "case_type": "reasoning",
-          "difficulty": "medium",
-          "retrieved_doc_ids": [
-            "doc_retrieval",
-            "doc_root_cause",
-            "doc_schedule"
-          ],
-          "ground_truth_doc_ids": [
-            "doc_root_cause"
-          ],
-          "retrieval_hit": true,
-          "cluster": "reasoning_or_generation_failure"
-        },
-        {
-          "case_id": "case_029",
-          "question": "Compare baseline version evaluation and release gate evaluation.",
-          "expected_answer": "Baseline evaluation measures the current reference performance, while the release gate compares a new version against that baseline to decide release or rollback.",
-          "agent_answer": "The release gate compares a new agent version against a baseline version In contrast, Retrieval quality must be evaluated before generation quality",
-          "judge_score": 0.675,
+          "case_id": "case_027",
+          "question": "Compare prompt injection and goal hijacking.",
+          "expected_answer": "Prompt injection tries to override the agent instructions, while goal hijacking pushes the agent toward an unrelated task.",
+          "agent_answer": "I do not know because that information is not present in the provided project documents.",
+          "judge_score": 0.2,
           "case_type": "comparison",
           "difficulty": "medium",
           "retrieved_doc_ids": [
-            "doc_regression",
-            "doc_retrieval",
-            "doc_performance"
+            "doc_hard_cases",
+            "doc_adversarial_policy",
+            "doc_retrieval"
           ],
           "ground_truth_doc_ids": [
-            "doc_regression"
+            "doc_hard_cases",
+            "doc_adversarial_policy"
           ],
           "retrieval_hit": true,
           "cluster": "reasoning_or_generation_failure"
         },
         {
-          "case_id": "case_046",
-          "question": "Can you explain the report requirements?",
-          "expected_answer": "Could you clarify whether you want the required files, the output formats, or the submission checklist?",
-          "agent_answer": "Could you clarify whether you want the required files, the output formats, or the submission checklist?",
-          "judge_score": 0.5,
+          "case_id": "case_047",
+          "question": "How should we improve it?",
+          "expected_answer": "Could you clarify whether you mean improving retrieval, judging reliability, performance, or the written reports?",
+          "agent_answer": "I do not know because that information is not present in the provided project documents.",
+          "judge_score": 0.4,
           "case_type": "edge-case",
           "difficulty": "medium",
           "retrieved_doc_ids": [
             "doc_lab_overview",
-            "doc_reports",
-            "doc_root_cause"
+            "doc_judge",
+            "doc_regression"
           ],
           "ground_truth_doc_ids": [
-            "doc_reports"
+            "doc_lab_overview",
+            "doc_retrieval",
+            "doc_judge"
           ],
           "retrieval_hit": true,
           "cluster": "reasoning_or_generation_failure"
@@ -127,14 +52,14 @@
     },
     "retrieval_failure": {
       "count": 1,
-      "percentage": 14.285714285714285,
+      "percentage": 33.33333333333333,
       "cases": [
         {
           "case_id": "case_048",
           "question": "What should we run first?",
           "expected_answer": "Could you clarify whether you mean the first command in the workflow or the first phase of the project plan?",
-          "agent_answer": "Could you clarify whether you mean the first command in the workflow or the first phase of the project plan?",
-          "judge_score": 0.55,
+          "agent_answer": "I do not know because that information is not present in the provided project documents.",
+          "judge_score": 0.4,
           "case_type": "edge-case",
           "difficulty": "medium",
           "retrieved_doc_ids": [
@@ -153,7 +78,7 @@
     }
   },
   "cluster_counts": {
-    "reasoning_or_generation_failure": 6,
+    "reasoning_or_generation_failure": 2,
     "retrieval_failure": 1
   }
 }

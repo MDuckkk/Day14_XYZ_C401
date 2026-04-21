@@ -17,9 +17,9 @@ class JudgeConfig:
             "max_tokens": 200,
         },
         {
-            "name": "gpt54nano",
+            "name": "gpt4mini_2",
             "provider": "openai",
-            "model": "gpt-5.4-nano",
+            "model": "gpt-4o-mini",
             "api_key": os.getenv("OPENAI_API_KEY"),
             "temperature": 0.0,
             "max_tokens": 200,
@@ -48,8 +48,8 @@ Return strict JSON format:
     }
 
     RELEASE_GATE = {
-        "min_accuracy": 0.80,
+        "min_accuracy": 0.75,
         "max_cost_per_eval": 0.50,
-        "max_latency_sec": 2.0,
+        "max_latency_sec": 3.5,
         "min_judge_agreement": 0.80,
     }

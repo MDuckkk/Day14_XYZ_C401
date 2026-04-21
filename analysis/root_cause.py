@@ -37,6 +37,9 @@ class RootCauseAnalyzer:
         return rows
 
     def _cluster_failure(self, row: Dict) -> str:
+        judge_modes = {item.get("mode") for item in row.get("judge_scores", [])}
+        if judge_modes and judge_modes == {"heuristic_fallback"}:
+            return "EVAL_INFRA_FAILURE"
         if row.get("ground_truth_doc_ids") and not (set(row.get("ground_truth_doc_ids", [])) & set(row.get("retrieved_doc_ids", []))):
             return "RETRIEVAL_FAILURE"
         if row.get("judge_agreement", 1.0) < 0.7:
@@ -60,6 +63,9 @@ class RootCauseAnalyzer:
         ]
 
     def _analyze_retrieval_vs_reasoning(self, result: Dict, golden: Dict) -> str:
+        judge_modes = {item.get("mode") for item in result.get("judge_scores", [])}
+        if judge_modes and judge_modes == {"heuristic_fallback"}:
+            return "Judge API calls failed and scoring fell back to heuristics, so this run mixes agent behavior with evaluation infrastructure failure."
         retrieved = set(result.get("retrieved_doc_ids", []))
         expected = set(result.get("ground_truth_doc_ids") or golden.get("ground_truth_doc_ids", []))
         if expected and not (retrieved & expected):
@@ -68,6 +74,8 @@ class RootCauseAnalyzer:
 
     def _determine_root_cause(self, result: Dict, golden: Dict) -> str:
         cluster = self._cluster_failure(result)
+        if cluster == "EVAL_INFRA_FAILURE":
+            return "OpenAI judge connectivity failed, forcing heuristic fallback and making quality conclusions less reliable."
         if cluster == "RETRIEVAL_FAILURE":
             return "Chunking/retrieval configuration is not surfacing relevant evidence."
         if cluster == "JUDGE_CONFLICT":
@@ -78,6 +86,11 @@ class RootCauseAnalyzer:
 
     def _generate_recommendations(self, cluster_type: str) -> List[str]:
         mapping = {
+            "EVAL_INFRA_FAILURE": [
+                "Stabilize OpenAI API connectivity before trusting the benchmark scores.",
+                "Log request failures separately from model-quality failures.",
+                "Rerun the full benchmark only after judge API calls succeed in live mode.",
+            ],
             "RETRIEVAL_FAILURE": [
                 "Adopt hybrid retrieval (keyword + vector).",
                 "Tune chunk size and overlap to preserve key facts.",
@@ -122,6 +135,7 @@ class RootCauseAnalyzer:
                 "avg_agreement": 0.0,
                 "num_conflicts": 0,
                 "cohens_kappa": 1.0,
+                "fallback_cases": 0,
             }
 
         avg_score = sum(float(r.get("judge_score", 0.0)) for r in self.results) / len(self.results)
@@ -143,12 +157,18 @@ class RootCauseAnalyzer:
             if overlap >= 2
             else 1.0
         )
+        fallback_cases = sum(
+            1
+            for row in self.results
+            if row.get("judge_scores") and {item.get("mode") for item in row.get("judge_scores", [])} == {"heuristic_fallback"}
+        )
 
         return {
             "avg_score": avg_score,
             "avg_agreement": avg_agreement,
             "num_conflicts": num_conflicts,
             "cohens_kappa": kappa,
+            "fallback_cases": fallback_cases,
         }
 
     def analyze_failure_5whys(self, failure: Dict) -> Dict:
@@ -211,6 +231,7 @@ class RootCauseAnalyzer:
             f"- Average judge agreement: {judge_summary['avg_agreement']:.2%}",
             f"- Judge conflicts: {judge_summary['num_conflicts']}",
             f"- Cohen's kappa: {judge_summary['cohens_kappa']:.4f}",
+            f"- Judge fallback cases: {judge_summary['fallback_cases']}",
             "",
             "## Failure Clusters",
         ]
@@ -223,6 +244,15 @@ class RootCauseAnalyzer:
                 lines.append(f"- {name}: {count} case(s) ({percentage:.1f}%)")
 
         lines.extend(["", "## Top Failure Deep Dive"])
+        if judge_summary["fallback_cases"]:
+            lines.extend(
+                [
+                    "## Infra Warning",
+                    "- All judge calls in this run fell back to heuristic scoring because the OpenAI judge requests returned connection errors.",
+                    "- Treat the reported score collapse as a mix of generation regression and evaluation-infrastructure instability.",
+                    "",
+                ]
+            )
         if not top_failures:
             lines.append("No failing cases found (all judge_score >= 0.7).")
             return "\n".join(lines)

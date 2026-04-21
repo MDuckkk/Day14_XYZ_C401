@@ -18,26 +18,26 @@
         "latency_avg": 1.5
       },
       "current": {
-        "avg_score": 0.8825,
+        "avg_score": 0.856,
         "retrieval_hit_rate": 0.9487,
-        "cost_per_eval": 0.0013,
-        "judge_agreement": 0.88,
-        "latency_avg": 0.1701,
+        "cost_per_eval": 0.0034,
+        "judge_agreement": 1.0,
+        "latency_avg": 1.7298,
         "total_cases": 50,
-        "passed_cases": 43,
-        "failure_rate": 0.14
+        "passed_cases": 47,
+        "failure_rate": 0.06
       },
       "deltas": {
-        "score_delta": 0.1325,
+        "score_delta": 0.106,
         "retrieval_delta": 0.1487,
-        "cost_delta": -0.4487,
-        "agreement_delta": 0.13,
-        "latency_delta": -1.3299
+        "cost_delta": -0.4466,
+        "agreement_delta": 0.25,
+        "latency_delta": 0.2298
       }
     },
-    "reasoning": "All checks passed. Score delta +0.133, cost delta $-0.449."
+    "reasoning": "All checks passed. Score delta +0.106, cost delta $-0.447."
   },
-  "timestamp": "2026-04-21T09:50:48.751450Z",
+  "timestamp": "2026-04-21T10:23:54.502740Z",
   "next_steps": [
     "Promote current metrics as the new baseline.",
     "Deploy and monitor for at least 24 hours.",

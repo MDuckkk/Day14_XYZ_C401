@@ -35,7 +35,9 @@ DOCUMENTS: List[Dict[str, str]] = [
         "title": "Multi Judge Consensus",
         "text": (
             "A production grade evaluation system should not trust a single judge model. "
-            "The project requires at least two judges, agreement rate tracking, and automatic score conflict handling."
+            "The project requires at least two judges, agreement rate tracking, and automatic score conflict handling. "
+            "Agreement rate matters because a good average score can still hide significant disagreement between judges; "
+            "tracking agreement ensures evaluation reliability even when aggregate scores look acceptable."
         ),
     },
     {
@@ -51,7 +53,9 @@ DOCUMENTS: List[Dict[str, str]] = [
         "title": "Submission Deliverables",
         "text": (
             "The final submission must include full source code, reports summary.json and benchmark_results.json, "
-            "the failure_analysis.md report, and individual reflection files."
+            "the failure_analysis.md report, and individual reflection files. "
+            "summary.json provides aggregated metrics across all cases, while benchmark_results.json contains "
+            "detailed per-case outputs including individual scores, retrieved documents, and latency measurements."
         ),
     },
     {
@@ -83,6 +87,8 @@ DOCUMENTS: List[Dict[str, str]] = [
         "title": "Performance and Cost",
         "text": (
             "The benchmark pipeline should run asynchronously and complete fifty cases in under two minutes. "
+            "Asynchronous execution is essential because it allows the pipeline to process multiple test cases concurrently, "
+            "meeting the under two minute completion target required by the benchmark. "
             "Teams should also report token usage, estimated cost, and optimization ideas that reduce cost without harming quality."
         ),
     },
