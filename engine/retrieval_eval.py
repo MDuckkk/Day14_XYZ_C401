@@ -71,7 +71,8 @@ def load_golden_set(path: str) -> Dict[str, Dict]:
 
 async def compute_metrics_from_results(benchmark_results_path: str, golden_set_path: str) -> Dict:
     with open(benchmark_results_path, "r", encoding="utf-8") as f:
-        results = json.load(f)
+        payload = json.load(f)
+    results = payload.get("results", payload if isinstance(payload, list) else [])
     golden_set = load_golden_set(golden_set_path)
     merged_rows = []
     for result in results:

@@ -9,12 +9,24 @@ def generate_summary_report(
     retrieval_metrics: Dict,
     failure_summary: Dict,
     agent_version: str,
+    judge_consensus: Dict = None,
+    release_gate: Dict = None,
 ) -> Dict:
     total = len(benchmark_results)
-    avg_score = sum(item["judge"]["final_score"] for item in benchmark_results) / total if total else 0.0
-    agreement_rate = sum(item["judge"]["agreement_rate"] for item in benchmark_results) / total if total else 0.0
-    avg_latency = sum(item["latency"] for item in benchmark_results) / total if total else 0.0
+    avg_score = (
+        sum(item.get("judge", {}).get("final_score", item.get("judge_score", 0.0)) for item in benchmark_results) / total
+        if total
+        else 0.0
+    )
+    agreement_rate = (
+        sum(item.get("judge", {}).get("agreement_rate", item.get("judge_agreement", 0.0)) for item in benchmark_results) / total
+        if total
+        else 0.0
+    )
+    avg_latency = sum(item.get("latency", item.get("latency_sec", 0.0)) for item in benchmark_results) / total if total else 0.0
     avg_tokens = sum(item.get("tokens_used", 0) for item in benchmark_results) / total if total else 0.0
+    judge_consensus = judge_consensus or {}
+    release_gate = release_gate or {}
 
     return {
         "metadata": {
@@ -25,7 +37,7 @@ def generate_summary_report(
         "metrics": {
             "avg_score": avg_score,
             "hit_rate": retrieval_metrics.get("hit_rate@5", 0.0),
-            "agreement_rate": agreement_rate,
+            "agreement_rate": judge_consensus.get("avg_agreement_rate", agreement_rate),
             "mrr": retrieval_metrics.get("mrr", 0.0),
             "ndcg@5": retrieval_metrics.get("ndcg@5", 0.0),
             "avg_latency_sec": avg_latency,
@@ -33,10 +45,12 @@ def generate_summary_report(
             "failure_rate": failure_summary.get("failure_rate", 0.0),
         },
         "retrieval_metrics": retrieval_metrics,
+        "judge_metrics": judge_consensus,
         "failure_analysis": {
             "total_failures": failure_summary.get("total_failures", 0),
             "cluster_counts": failure_summary.get("cluster_counts", {}),
         },
+        "release_gate": release_gate,
     }
 
 

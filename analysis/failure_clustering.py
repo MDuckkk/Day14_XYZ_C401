@@ -11,7 +11,8 @@ def load_golden_set(path: str) -> Dict[str, Dict]:
 class FailureAnalyzer:
     def __init__(self, benchmark_results_path: str, golden_set_path: str):
         with open(benchmark_results_path, "r", encoding="utf-8") as f:
-            self.results = json.load(f)
+            payload = json.load(f)
+        self.results = payload.get("results", payload if isinstance(payload, list) else [])
         self.golden_set = load_golden_set(golden_set_path)
 
     def identify_failures(self) -> List[Dict]:
@@ -22,14 +23,17 @@ class FailureAnalyzer:
             ground_truth = case.get("ground_truth_doc_ids", [])
             hit = bool(set(retrieved_ids) & set(ground_truth)) if ground_truth else True
             judge_score = result.get("judge", {}).get("final_score", 0.0)
-            if judge_score >= 3.0 and hit:
+            if not judge_score:
+                judge_score = result.get("judge_score", 0.0)
+            pass_threshold = 0.6 if judge_score <= 1.0 else 3.0
+            if judge_score >= pass_threshold and hit:
                 continue
             failures.append(
                 {
                     "case_id": result["case_id"],
-                    "question": case.get("question", result.get("test_case")),
+                    "question": case.get("question", result.get("question", result.get("test_case"))),
                     "expected_answer": case.get("expected_answer", ""),
-                    "agent_answer": result.get("agent_response", ""),
+                    "agent_answer": result.get("agent_answer", result.get("agent_response", "")),
                     "judge_score": judge_score,
                     "case_type": case.get("case_type", "unknown"),
                     "difficulty": case.get("difficulty", "unknown"),
@@ -45,7 +49,7 @@ class FailureAnalyzer:
         case_type = failure.get("case_type", "")
         if not failure.get("retrieval_hit") and failure.get("ground_truth_doc_ids"):
             return "retrieval_failure"
-        if case_type == "adversarial" and "cannot" not in actual:
+        if case_type == "adversarial" and not any(token in actual for token in ["cannot", "can't", "do not know"]):
             return "instruction_following_failure"
         if case_type == "edge-case" and not any(token in actual for token in ["do not know", "clarify"]):
             return "edge_case_handling_failure"
