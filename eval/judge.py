@@ -81,10 +81,7 @@ class OpenAIJudge(JudgeClient):
                     "messages": [{"role": "user", "content": prompt}],
                     "temperature": self.model_cfg["temperature"],
                 }
-                if str(self.model_cfg["model"]).startswith("gpt-5"):
-                    request_kwargs["max_completion_tokens"] = self.model_cfg["max_tokens"]
-                else:
-                    request_kwargs["max_tokens"] = self.model_cfg["max_tokens"]
+                request_kwargs["max_tokens"] = self.model_cfg["max_tokens"]
 
                 response = await client.chat.completions.create(**request_kwargs)
                 parsed = _safe_json_parse(response.choices[0].message.content or "")

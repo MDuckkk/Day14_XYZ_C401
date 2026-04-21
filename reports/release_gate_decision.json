@@ -1,46 +1,46 @@
 {
   "release_gate": {
-    "decision": "RELEASE",
-    "confidence": 0.95,
+    "decision": "CONDITIONAL_RELEASE",
+    "confidence": 0.7,
     "checks": {
       "quality_ok": true,
       "cost_ok": true,
       "latency_ok": true,
-      "agreement_ok": true,
+      "agreement_ok": false,
       "no_major_regression": true
     },
     "comparison": {
       "baseline": {
-        "avg_score": 0.75,
-        "retrieval_hit_rate": 0.8,
-        "cost_per_eval": 0.45,
-        "judge_agreement": 0.75,
-        "latency_avg": 1.5
-      },
-      "current": {
-        "avg_score": 0.856,
+        "avg_score": 0.791,
         "retrieval_hit_rate": 0.9487,
         "cost_per_eval": 0.0034,
-        "judge_agreement": 1.0,
-        "latency_avg": 1.7298,
+        "judge_agreement": 0.72,
+        "latency_avg": 1.9201
+      },
+      "current": {
+        "avg_score": 0.782,
+        "retrieval_hit_rate": 0.9487,
+        "cost_per_eval": 0.0033,
+        "judge_agreement": 0.72,
+        "latency_avg": 1.5306,
         "total_cases": 50,
-        "passed_cases": 47,
-        "failure_rate": 0.06
+        "passed_cases": 37,
+        "failure_rate": 0.26
       },
       "deltas": {
-        "score_delta": 0.106,
-        "retrieval_delta": 0.1487,
-        "cost_delta": -0.4466,
-        "agreement_delta": 0.25,
-        "latency_delta": 0.2298
+        "score_delta": -0.009,
+        "retrieval_delta": 0.0,
+        "cost_delta": -0.0001,
+        "agreement_delta": 0.0,
+        "latency_delta": -0.3895
       }
     },
-    "reasoning": "All checks passed. Score delta +0.106, cost delta $-0.447."
+    "reasoning": "Core quality passed but needs review on: agreement_ok."
   },
-  "timestamp": "2026-04-21T10:23:54.502740Z",
+  "timestamp": "2026-04-21T10:49:07.175193Z",
   "next_steps": [
-    "Promote current metrics as the new baseline.",
-    "Deploy and monitor for at least 24 hours.",
-    "Track drift by case type in production logs."
+    "Run targeted tests for failed checks.",
+    "Apply low-risk optimizations, then re-benchmark.",
+    "Require manual approval before production rollout."
   ]
 }

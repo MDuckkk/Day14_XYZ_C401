@@ -14,10 +14,10 @@ from eval.llm_config import JudgeConfig
 class AsyncBenchmarkRunner:
     """Run benchmark cases asynchronously with multi-judge scoring."""
 
-    def __init__(self, golden_set_path: str):
+    def __init__(self, golden_set_path: str, agent_model: str = "gpt-4o-mini"):
         self.golden_set_path = Path(golden_set_path)
         self.golden_set = self._load_golden_set(self.golden_set_path)
-        self.agent = MainAgent()
+        self.agent = MainAgent(model=agent_model)
         self.multi_judge = MultiJudge()
         self.results: List[Dict] = []
 

@@ -9,17 +9,17 @@ class JudgeConfig:
 
     JUDGE_MODELS = [
         {
-            "name": "gpt4",
+            "name": "gpt41mini",
             "provider": "openai",
-            "model": "gpt-4o-mini",
+            "model": "gpt-4.1-mini",
             "api_key": os.getenv("OPENAI_API_KEY"),
             "temperature": 0.0,
             "max_tokens": 200,
         },
         {
-            "name": "gpt4mini_2",
+            "name": "gpt41nano",
             "provider": "openai",
-            "model": "gpt-4o-mini",
+            "model": "gpt-4.1-nano",
             "api_key": os.getenv("OPENAI_API_KEY"),
             "temperature": 0.0,
             "max_tokens": 200,

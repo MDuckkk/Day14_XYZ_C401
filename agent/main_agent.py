@@ -14,10 +14,10 @@ class MainAgent:
     edge-case prompts.
     """
 
-    def __init__(self):
-        self.name = "SupportAgent-v1"
+    def __init__(self, model: str = "gpt-4o-mini"):
+        self.name = "SupportAgent"
         self.documents = DOCUMENTS
-        self.model = "gpt-4o-mini"
+        self.model = model
         self.api_key = os.getenv("OPENAI_API_KEY")
 
     @staticmethod
