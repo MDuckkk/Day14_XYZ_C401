@@ -96,25 +96,22 @@ class ConsensusEngine:
 
         agreement_rates: List[float] = []
         final_scores: List[float] = []
-        gpt4_scores: List[float] = []
-        claude_scores: List[float] = []
+        judge_a_scores: List[float] = []
+        judge_b_scores: List[float] = []
 
         for row in all_case_results:
             final_scores.append(float(row.get("final_score", 0.0)))
             judge_rows = row.get("individual_scores", [])
             raw_scores = [float(j.get("score", 0.0)) for j in judge_rows]
             agreement_rates.append(ConsensusEngine.calculate_agreement_rate(raw_scores))
-            for item in judge_rows:
-                model = item.get("model")
-                score = float(item.get("score", 0.0))
-                if model == "gpt4":
-                    gpt4_scores.append(score)
-                elif model == "claude":
-                    claude_scores.append(score)
+            if len(raw_scores) >= 1:
+                judge_a_scores.append(raw_scores[0])
+            if len(raw_scores) >= 2:
+                judge_b_scores.append(raw_scores[1])
 
-        overlap = min(len(gpt4_scores), len(claude_scores))
+        overlap = min(len(judge_a_scores), len(judge_b_scores))
         kappa = (
-            ConsensusEngine.calculate_cohens_kappa(gpt4_scores[:overlap], claude_scores[:overlap])
+            ConsensusEngine.calculate_cohens_kappa(judge_a_scores[:overlap], judge_b_scores[:overlap])
             if overlap >= 2
             else 1.0
         )

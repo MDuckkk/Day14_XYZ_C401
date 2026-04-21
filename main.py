@@ -78,7 +78,7 @@ async def main():
     print("\nBenchmark summary")
     print(f"- Cases: {summary['metadata']['total']}")
     print(f"- Average score: {summary['metrics']['avg_score']:.3f}")
-    print(f"- Hit Rate@5: {summary['metrics']['hit_rate']:.2%}")
+    print(f"- Hit Rate@5: {summary['metrics']['hit_rate@5']:.2%}")
     print(f"- MRR: {summary['metrics']['mrr']:.3f}")
     print(f"- NDCG@5: {summary['metrics']['ndcg@5']:.3f}")
     print(f"- Agreement Rate: {summary['metrics']['agreement_rate']:.2%}")

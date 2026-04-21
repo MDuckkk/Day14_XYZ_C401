@@ -1,8 +1,8 @@
 {
   "total_cases": 50,
-  "avg_agreement_rate": 1.0,
-  "avg_score": 0.4022,
-  "num_conflicts": 0,
-  "cohens_kappa": 0.9447,
-  "timestamp": "2026-04-21T08:56:25.910073Z"
+  "avg_agreement_rate": 0.88,
+  "avg_score": 0.8825,
+  "num_conflicts": 6,
+  "cohens_kappa": 0.1504,
+  "timestamp": "2026-04-21T09:50:48.746108Z"
 }

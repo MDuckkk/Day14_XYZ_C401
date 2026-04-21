@@ -1,6 +1,10 @@
-﻿import json
+import json
 from pathlib import Path
 from typing import Dict, List
+
+from eval.consensus import ConsensusEngine
+
+PASS_THRESHOLD = 0.7
 
 
 class RootCauseAnalyzer:
@@ -33,31 +37,27 @@ class RootCauseAnalyzer:
         return rows
 
     def _cluster_failure(self, row: Dict) -> str:
-        if row.get("retrieval_hit_rate", 0.0) <= 0.0:
+        if row.get("ground_truth_doc_ids") and not (set(row.get("ground_truth_doc_ids", [])) & set(row.get("retrieved_doc_ids", []))):
             return "RETRIEVAL_FAILURE"
         if row.get("judge_agreement", 1.0) < 0.7:
             return "JUDGE_CONFLICT"
         answer = (row.get("agent_answer") or "").lower()
-        if "khong" in answer or "không" in answer:
+        if "khong" in answer or "không" in answer or "do not know" in answer:
             return "HALLUCINATION_OR_REFUSAL"
         return "REASONING_FAILURE"
 
     def get_top_failures(self, n: int = 5) -> List[Dict]:
-        failed = [r for r in self.results if r.get("judge_score", 1.0) < 0.7]
+        failed = [r for r in self.results if r.get("judge_score", 1.0) < PASS_THRESHOLD]
         failed.sort(key=lambda x: x.get("judge_score", 1.0))
-        top = failed[:n]
-
-        out = []
-        for row in top:
-            out.append(
-                {
-                    "case_id": row.get("case_id"),
-                    "question": row.get("question"),
-                    "score": row.get("judge_score", 0.0),
-                    "cluster": self._cluster_failure(row),
-                }
-            )
-        return out
+        return [
+            {
+                "case_id": row.get("case_id"),
+                "question": row.get("question"),
+                "score": row.get("judge_score", 0.0),
+                "cluster": self._cluster_failure(row),
+            }
+            for row in failed[:n]
+        ]
 
     def _analyze_retrieval_vs_reasoning(self, result: Dict, golden: Dict) -> str:
         retrieved = set(result.get("retrieved_doc_ids", []))
@@ -71,7 +71,7 @@ class RootCauseAnalyzer:
         if cluster == "RETRIEVAL_FAILURE":
             return "Chunking/retrieval configuration is not surfacing relevant evidence."
         if cluster == "JUDGE_CONFLICT":
-            return "Rubric alignment across judges is weak; scoring criteria need stricter calibration."
+            return "Rubric alignment across judges is weak; clarification-style prompts need stricter calibration."
         if cluster == "HALLUCINATION_OR_REFUSAL":
             return "Prompt constraints or confidence policy cause unsupported or over-conservative outputs."
         return "Reasoning prompt and answer synthesis strategy are insufficient for this case type."
@@ -84,7 +84,7 @@ class RootCauseAnalyzer:
                 "Add query rewrite for ambiguous user questions.",
             ],
             "JUDGE_CONFLICT": [
-                "Tighten judge prompt rubric and scoring bands.",
+                "Tighten judge prompt rubric and scoring bands for clarification questions.",
                 "Add a tiebreak judge for large score divergence.",
                 "Track judge drift by case type each run.",
             ],
@@ -101,6 +101,56 @@ class RootCauseAnalyzer:
         }
         return mapping.get(cluster_type, [])
 
+    def _build_failure_summary(self) -> Dict:
+        failed = [r for r in self.results if r.get("judge_score", 1.0) < PASS_THRESHOLD]
+        clusters: Dict[str, int] = {}
+        for row in failed:
+            cluster = self._cluster_failure(row)
+            clusters[cluster] = clusters.get(cluster, 0) + 1
+        return {
+            "total_cases": len(self.results),
+            "failed_cases": len(failed),
+            "passed_cases": len(self.results) - len(failed),
+            "failure_rate": (len(failed) / len(self.results)) if self.results else 0.0,
+            "clusters": clusters,
+        }
+
+    def _build_judge_summary(self) -> Dict:
+        if not self.results:
+            return {
+                "avg_score": 0.0,
+                "avg_agreement": 0.0,
+                "num_conflicts": 0,
+                "cohens_kappa": 1.0,
+            }
+
+        avg_score = sum(float(r.get("judge_score", 0.0)) for r in self.results) / len(self.results)
+        avg_agreement = sum(float(r.get("judge_agreement", 0.0)) for r in self.results) / len(self.results)
+        num_conflicts = sum(1 for r in self.results if float(r.get("judge_agreement", 0.0)) < 0.7)
+
+        judge_a_scores: List[float] = []
+        judge_b_scores: List[float] = []
+        for row in self.results:
+            raw_scores = [float(item.get("score", 0.0)) for item in row.get("judge_scores", [])]
+            if len(raw_scores) >= 1:
+                judge_a_scores.append(raw_scores[0])
+            if len(raw_scores) >= 2:
+                judge_b_scores.append(raw_scores[1])
+
+        overlap = min(len(judge_a_scores), len(judge_b_scores))
+        kappa = (
+            ConsensusEngine.calculate_cohens_kappa(judge_a_scores[:overlap], judge_b_scores[:overlap])
+            if overlap >= 2
+            else 1.0
+        )
+
+        return {
+            "avg_score": avg_score,
+            "avg_agreement": avg_agreement,
+            "num_conflicts": num_conflicts,
+            "cohens_kappa": kappa,
+        }
+
     def analyze_failure_5whys(self, failure: Dict) -> Dict:
         case_id = str(failure["case_id"])
         result = next((r for r in self.results if str(r.get("case_id")) == case_id), None)
@@ -111,7 +161,7 @@ class RootCauseAnalyzer:
         whys = {
             "why_1": {
                 "question": "Why did the agent answer score low?",
-                "observation": f"Score={result.get('judge_score', 0.0):.2f}",
+                "observation": f"Score={result.get('judge_score', 0.0):.3f}",
                 "answer": "The response diverges from the expected answer content.",
             },
             "why_2": {
@@ -147,20 +197,45 @@ class RootCauseAnalyzer:
 
     def generate_full_report(self, top_n: int = 5) -> str:
         top_failures = self.get_top_failures(n=top_n)
-        lines = ["# Root Cause Analysis (5 Whys)", ""]
+        failure_summary = self._build_failure_summary()
+        judge_summary = self._build_judge_summary()
 
+        lines = [
+            "# Failure Analysis Report",
+            "",
+            "## Executive Summary",
+            f"- Total cases: {failure_summary['total_cases']}",
+            f"- Pass/Fail: {failure_summary['passed_cases']}/{failure_summary['failed_cases']}",
+            f"- Failure rate: {failure_summary['failure_rate']:.1%}",
+            f"- Average judge score: {judge_summary['avg_score']:.4f} / 1.0",
+            f"- Average judge agreement: {judge_summary['avg_agreement']:.2%}",
+            f"- Judge conflicts: {judge_summary['num_conflicts']}",
+            f"- Cohen's kappa: {judge_summary['cohens_kappa']:.4f}",
+            "",
+            "## Failure Clusters",
+        ]
+
+        if not failure_summary["clusters"]:
+            lines.append("- No failing cases were detected.")
+        else:
+            for name, count in sorted(failure_summary["clusters"].items()):
+                percentage = (count / failure_summary["failed_cases"] * 100) if failure_summary["failed_cases"] else 0.0
+                lines.append(f"- {name}: {count} case(s) ({percentage:.1f}%)")
+
+        lines.extend(["", "## Top Failure Deep Dive"])
         if not top_failures:
             lines.append("No failing cases found (all judge_score >= 0.7).")
             return "\n".join(lines)
 
         for idx, failure in enumerate(top_failures, start=1):
             analysis = self.analyze_failure_5whys(failure)
-            lines.append(f"## Failure #{idx}: {analysis['cluster']}")
-            lines.append(f"Case: {analysis['case_id']} | Score: {analysis['score']:.2f}")
-            lines.append(f"Question: {analysis['question']}")
+            lines.append(f"### Failure #{idx}: {analysis['case_id']}")
+            lines.append(f"- Cluster: {analysis['cluster']}")
+            lines.append(f"- Score: {analysis['score']:.3f}")
+            lines.append(f"- Question: {analysis['question']}")
             lines.append("")
             for key, payload in analysis["five_whys"].items():
-                lines.append(f"### {key.upper()}: {payload['question']}")
+                lines.append(f"#### {key.upper()}: {payload['question']}")
                 lines.append(f"- Observation: {payload['observation']}")
                 lines.append(f"- Answer: {payload['answer']}")
                 lines.append("")

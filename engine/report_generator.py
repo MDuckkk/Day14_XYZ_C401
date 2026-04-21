@@ -36,7 +36,7 @@ def generate_summary_report(
         },
         "metrics": {
             "avg_score": avg_score,
-            "hit_rate": retrieval_metrics.get("hit_rate@5", 0.0),
+            "hit_rate@5": retrieval_metrics.get("hit_rate@5", 0.0),
             "agreement_rate": judge_consensus.get("avg_agreement_rate", agreement_rate),
             "mrr": retrieval_metrics.get("mrr", 0.0),
             "ndcg@5": retrieval_metrics.get("ndcg@5", 0.0),

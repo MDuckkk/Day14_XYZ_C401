@@ -2,6 +2,8 @@ import json
 from collections import Counter, defaultdict
 from typing import Dict, List
 
+PASS_THRESHOLD = 0.7
+
 
 def load_golden_set(path: str) -> Dict[str, Dict]:
     with open(path, "r", encoding="utf-8") as f:
@@ -25,8 +27,8 @@ class FailureAnalyzer:
             judge_score = result.get("judge", {}).get("final_score", 0.0)
             if not judge_score:
                 judge_score = result.get("judge_score", 0.0)
-            pass_threshold = 0.6 if judge_score <= 1.0 else 3.0
-            if judge_score >= pass_threshold and hit:
+            pass_threshold = PASS_THRESHOLD if judge_score <= 1.0 else 3.0
+            if judge_score >= pass_threshold:
                 continue
             failures.append(
                 {

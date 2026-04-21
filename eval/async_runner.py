@@ -8,6 +8,7 @@ from typing import Dict, List
 from agent.main_agent import MainAgent
 from eval.consensus import ConsensusEngine
 from eval.judge import MultiJudge
+from eval.llm_config import JudgeConfig
 
 
 class AsyncBenchmarkRunner:
@@ -148,7 +149,7 @@ class AsyncBenchmarkRunner:
             "metadata": {
                 "timestamp": datetime.utcnow().isoformat() + "Z",
                 "total_cases": len(self.results),
-                "models": ["gpt4", "claude"],
+                "models": [m["name"] for m in JudgeConfig.JUDGE_MODELS],
                 "dataset_path": str(self.golden_set_path),
             },
             "results": self.results,

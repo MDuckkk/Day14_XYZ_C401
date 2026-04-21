@@ -38,15 +38,25 @@ class RegressionReleaseGate:
         total = len(self.current_results)
         scores = [float(r.get("judge_score", 0.0)) for r in self.current_results]
         agreements = [float(r.get("judge_agreement", 0.0)) for r in self.current_results]
-        retrieval_hits = [float(r.get("retrieval_hit_rate", 0.0)) for r in self.current_results]
         latencies = [float(r.get("latency_sec", 0.0)) for r in self.current_results]
 
         total_tokens = sum(int(r.get("tokens_used", 0)) for r in self.current_results)
         estimated_cost = (total_tokens / 1000.0) * 0.01
+        retrieval_rows = [r for r in self.current_results if r.get("ground_truth_doc_ids")]
+        if retrieval_rows:
+            retrieval_hits = [
+                1.0
+                if set(r.get("ground_truth_doc_ids", [])) & set(r.get("retrieved_doc_ids", [])[:5])
+                else 0.0
+                for r in retrieval_rows
+            ]
+            retrieval_hit_rate = round(sum(retrieval_hits) / len(retrieval_hits), 4)
+        else:
+            retrieval_hit_rate = 0.0
 
         return {
             "avg_score": round(sum(scores) / total, 4),
-            "retrieval_hit_rate": round(sum(retrieval_hits) / total, 4),
+            "retrieval_hit_rate": retrieval_hit_rate,
             "cost_per_eval": round(estimated_cost / total, 4),
             "judge_agreement": round(sum(agreements) / total, 4),
             "latency_avg": round(sum(latencies) / total, 4),

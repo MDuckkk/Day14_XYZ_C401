@@ -1,5 +1,6 @@
 import json
 import os
+from glob import glob
 
 
 def validate_lab():
@@ -39,10 +40,11 @@ def validate_lab():
     print(f"Total cases: {data['metadata'].get('total', 'N/A')}")
     print(f"Average score: {metrics.get('avg_score', 0):.2f}")
 
-    if "hit_rate" in metrics:
-        print(f"[OK] Retrieval metrics present (Hit Rate: {metrics['hit_rate'] * 100:.1f}%)")
+    hit_rate = metrics.get("hit_rate@5", metrics.get("hit_rate"))
+    if hit_rate is not None:
+        print(f"[OK] Retrieval metrics present (Hit Rate@5: {hit_rate * 100:.1f}%)")
     else:
-        print("[WARN] Missing retrieval metric 'hit_rate'.")
+        print("[WARN] Missing retrieval metric 'hit_rate@5'.")
 
     if "agreement_rate" in metrics:
         print(f"[OK] Multi-judge metrics present (Agreement Rate: {metrics['agreement_rate'] * 100:.1f}%)")
@@ -51,6 +53,12 @@ def validate_lab():
 
     if data["metadata"].get("version"):
         print("[OK] Agent version metadata present.")
+
+    reflection_files = sorted(glob("analysis/reflections/reflection_*.md"))
+    if reflection_files:
+        print(f"[OK] Found {len(reflection_files)} reflection file(s).")
+    else:
+        print("[WARN] Missing reflection files under analysis/reflections/.")
 
     print("\nThe lab package is ready for grading.")
 
