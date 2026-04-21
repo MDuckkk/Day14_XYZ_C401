@@ -1,31 +1,32 @@
-# Báo cáo Phân tích Thất bại (Failure Analysis Report)
+# Root Cause Analysis (5 Whys)
 
-## 1. Tổng quan Benchmark
-- **Tổng số cases:** 50
-- **Tỉ lệ Pass/Fail:** X/Y
-- **Điểm RAGAS trung bình:**
-    - Faithfulness: 0.XX
-    - Relevancy: 0.XX
-- **Điểm LLM-Judge trung bình:** X.X / 5.0
+## Failure #1: RETRIEVAL_FAILURE
+Case: case_001 | Score: 0.45
+Question: Câu hỏi mẫu từ tài liệu?
 
-## 2. Phân nhóm lỗi (Failure Clustering)
-| Nhóm lỗi | Số lượng | Nguyên nhân dự kiến |
-|----------|----------|---------------------|
-| Hallucination | 5 | Retriever lấy sai context |
-| Incomplete | 3 | Prompt quá ngắn, không yêu cầu chi tiết |
-| Tone Mismatch | 2 | Agent trả lời quá suồng sã |
+### WHY_1: Why did the agent answer score low?
+- Observation: Score=0.45
+- Answer: The response diverges from the expected answer content.
 
-## 3. Phân tích 5 Whys (Chọn 3 case tệ nhất)
+### WHY_2: Why does the response diverge from expectation?
+- Observation: Compare retrieved evidence and expected support.
+- Answer: Reasoning likely failed: retrieval appears acceptable, but final answer remains weak.
 
-### Case #1: [Mô tả ngắn]
-1. **Symptom:** Agent trả lời sai về...
-2. **Why 1:** LLM không thấy thông tin trong context.
-3. **Why 2:** Vector DB không tìm thấy tài liệu liên quan nhất.
-4. **Why 3:** Chunking size quá lớn làm loãng thông tin quan trọng.
-5. **Why 4:** ...
-6. **Root Cause:** Chiến lược Chunking không phù hợp với dữ liệu bảng biểu.
+### WHY_3: Why did retrieval/reasoning fail in this stage?
+- Observation: Case type=fact-check, difficulty=easy
+- Answer: Current prompt/retrieval settings are not specialized by case type.
 
-## 4. Kế hoạch cải tiến (Action Plan)
-- [ ] Thay đổi Chunking strategy từ Fixed-size sang Semantic Chunking.
-- [ ] Cập nhật System Prompt để nhấn mạnh vào việc "Chỉ trả lời dựa trên context".
-- [ ] Thêm bước Reranking vào Pipeline.
+### WHY_4: Why are settings not specialized enough?
+- Observation: One-size-fits-all defaults across heterogeneous cases.
+- Answer: No adaptive strategy or dynamic routing exists for hard/adversarial questions.
+
+### WHY_5: What is the root cause?
+- Observation: System-level behavior pattern from repeated low-score cases.
+- Answer: Chunking/retrieval configuration is not surfacing relevant evidence.
+
+Recommendations:
+- Adopt hybrid retrieval (keyword + vector).
+- Tune chunk size and overlap to preserve key facts.
+- Add query rewrite for ambiguous user questions.
+
+---

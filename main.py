@@ -1,86 +1,77 @@
-import asyncio
+﻿import asyncio
 import json
-import os
-import time
-from engine.runner import BenchmarkRunner
-from agent.main_agent import MainAgent
+from pathlib import Path
 
-# Giả lập các components Expert
-class ExpertEvaluator:
-    async def score(self, case, resp): 
-        # Giả lập tính toán Hit Rate và MRR
-        return {
-            "faithfulness": 0.9, 
-            "relevancy": 0.8,
-            "retrieval": {"hit_rate": 1.0, "mrr": 0.5}
-        }
+from analysis.regression_gate import RegressionReleaseGate
+from analysis.root_cause import RootCauseAnalyzer
+from eval.async_runner import AsyncBenchmarkRunner
+from eval.consensus import ConsensusEngine
 
-class MultiModelJudge:
-    async def evaluate_multi_judge(self, q, a, gt): 
-        return {
-            "final_score": 4.5, 
-            "agreement_rate": 0.8,
-            "reasoning": "Cả 2 model đồng ý đây là câu trả lời tốt."
-        }
 
-async def run_benchmark_with_results(agent_version: str):
-    print(f"🚀 Khởi động Benchmark cho {agent_version}...")
+async def main() -> None:
+    print("=" * 70)
+    print("STARTING AI EVALUATION FACTORY BENCHMARK")
+    print("=" * 70)
 
-    if not os.path.exists("data/golden_set.jsonl"):
-        print("❌ Thiếu data/golden_set.jsonl. Hãy chạy 'python data/synthetic_gen.py' trước.")
-        return None, None
-
-    with open("data/golden_set.jsonl", "r", encoding="utf-8") as f:
-        dataset = [json.loads(line) for line in f if line.strip()]
-
-    if not dataset:
-        print("❌ File data/golden_set.jsonl rỗng. Hãy tạo ít nhất 1 test case.")
-        return None, None
-
-    runner = BenchmarkRunner(MainAgent(), ExpertEvaluator(), MultiModelJudge())
-    results = await runner.run_all(dataset)
-
-    total = len(results)
-    summary = {
-        "metadata": {"version": agent_version, "total": total, "timestamp": time.strftime("%Y-%m-%d %H:%M:%S")},
-        "metrics": {
-            "avg_score": sum(r["judge"]["final_score"] for r in results) / total,
-            "hit_rate": sum(r["ragas"]["retrieval"]["hit_rate"] for r in results) / total,
-            "agreement_rate": sum(r["judge"]["agreement_rate"] for r in results) / total
-        }
-    }
-    return results, summary
-
-async def run_benchmark(version):
-    _, summary = await run_benchmark_with_results(version)
-    return summary
-
-async def main():
-    v1_summary = await run_benchmark("Agent_V1_Base")
-    
-    # Giả lập V2 có cải tiến (để test logic)
-    v2_results, v2_summary = await run_benchmark_with_results("Agent_V2_Optimized")
-    
-    if not v1_summary or not v2_summary:
-        print("❌ Không thể chạy Benchmark. Kiểm tra lại data/golden_set.jsonl.")
+    golden_path = Path("data/golden_set.jsonl")
+    if not golden_path.exists():
+        print("golden_set.jsonl is missing. Run: python data/synthetic_gen.py")
         return
 
-    print("\n📊 --- KẾT QUẢ SO SÁNH (REGRESSION) ---")
-    delta = v2_summary["metrics"]["avg_score"] - v1_summary["metrics"]["avg_score"]
-    print(f"V1 Score: {v1_summary['metrics']['avg_score']}")
-    print(f"V2 Score: {v2_summary['metrics']['avg_score']}")
-    print(f"Delta: {'+' if delta >= 0 else ''}{delta:.2f}")
+    print("[1/5] Running async benchmark with multi-judge...")
+    runner = AsyncBenchmarkRunner(str(golden_path))
+    results = await runner.run_benchmark(max_concurrent=5)
+    runner.save_results("reports/benchmark_results.json")
 
-    os.makedirs("reports", exist_ok=True)
-    with open("reports/summary.json", "w", encoding="utf-8") as f:
-        json.dump(v2_summary, f, ensure_ascii=False, indent=2)
-    with open("reports/benchmark_results.json", "w", encoding="utf-8") as f:
-        json.dump(v2_results, f, ensure_ascii=False, indent=2)
+    print("[2/5] Building benchmark summary...")
+    summary = runner.build_summary(version="Agent_V2_Optimized")
+    Path("reports").mkdir(parents=True, exist_ok=True)
+    Path("reports/summary.json").write_text(
+        json.dumps(summary, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
 
-    if delta > 0:
-        print("✅ QUYẾT ĐỊNH: CHẤP NHẬN BẢN CẬP NHẬT (APPROVE)")
-    else:
-        print("❌ QUYẾT ĐỊNH: TỪ CHỐI (BLOCK RELEASE)")
+    print("[3/5] Computing judge consensus metrics...")
+    consensus_input = [
+        {
+            "final_score": r.get("judge_score", 0.0),
+            "individual_scores": r.get("judge_scores", []),
+        }
+        for r in results
+    ]
+    consensus_report = ConsensusEngine.generate_consensus_report(consensus_input)
+    Path("metrics").mkdir(parents=True, exist_ok=True)
+    Path("metrics/judge_consensus.json").write_text(
+        json.dumps(consensus_report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    print("[4/5] Running regression release gate...")
+    gate = RegressionReleaseGate("reports/benchmark_results.json")
+    gate_report = gate.generate_gate_report()
+    Path("reports/release_gate_decision.json").write_text(
+        json.dumps(gate_report, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+
+    print("[5/5] Generating 5 Whys failure analysis...")
+    analyzer = RootCauseAnalyzer("reports/benchmark_results.json", "data/golden_set.jsonl")
+    failure_report = analyzer.generate_full_report(top_n=5)
+    Path("analysis/failure_analysis.md").write_text(failure_report, encoding="utf-8")
+
+    print("=" * 70)
+    print("DONE")
+    print(f"Total cases evaluated: {len(results)}")
+    print(f"Average score: {summary['metrics']['avg_score']:.4f}")
+    print(f"Agreement rate: {summary['metrics']['agreement_rate']:.4f}")
+    print(f"Release decision: {gate_report['release_gate']['decision']}")
+    print("Generated files:")
+    print("- reports/benchmark_results.json")
+    print("- reports/summary.json")
+    print("- metrics/judge_consensus.json")
+    print("- reports/release_gate_decision.json")
+    print("- analysis/failure_analysis.md")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
