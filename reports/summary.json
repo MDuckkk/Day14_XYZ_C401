@@ -2,7 +2,7 @@
   "metadata": {
     "version": "Agent_V2_Optimized",
     "total": 50,
-    "timestamp": "2026-04-21 15:42:07"
+    "timestamp": "2026-04-21 15:56:25"
   },
   "metrics": {
     "avg_score": 0.4022,
@@ -10,7 +10,7 @@
     "agreement_rate": 1.0,
     "mrr": 0.8,
     "ndcg@5": 0.7712017625209036,
-    "avg_latency_sec": 0.17136800000000002,
+    "avg_latency_sec": 0.108592,
     "avg_tokens_used": 129.26,
     "failure_rate": 0.84
   },
@@ -20,7 +20,7 @@
     "mrr": 0.8,
     "ndcg@5": 0.7712017625209036,
     "total_cases": 50,
-    "timestamp": "2026-04-21T15:42:07.657223"
+    "timestamp": "2026-04-21T15:56:25.909557"
   },
   "judge_metrics": {
     "total_cases": 50,
@@ -28,7 +28,7 @@
     "avg_score": 0.4022,
     "num_conflicts": 0,
     "cohens_kappa": 0.9447,
-    "timestamp": "2026-04-21T08:42:07.657223Z"
+    "timestamp": "2026-04-21T08:56:25.910073Z"
   },
   "failure_analysis": {
     "total_failures": 42,
@@ -63,7 +63,7 @@
           "retrieval_hit_rate": 0.62,
           "cost_per_eval": 0.0013,
           "judge_agreement": 1.0,
-          "latency_avg": 0.1714,
+          "latency_avg": 0.1086,
           "total_cases": 50,
           "passed_cases": 7,
           "failure_rate": 0.86
@@ -73,12 +73,12 @@
           "retrieval_delta": -0.18,
           "cost_delta": -0.4487,
           "agreement_delta": 0.25,
-          "latency_delta": -1.3286
+          "latency_delta": -1.3914
         }
       },
       "reasoning": "Failed release checks: quality_ok, no_major_regression."
     },
-    "timestamp": "2026-04-21T08:42:07.657223Z",
+    "timestamp": "2026-04-21T08:56:25.914411Z",
     "next_steps": [
       "Review top failure cases and root causes.",
       "Apply fixes and rerun benchmark suite.",
